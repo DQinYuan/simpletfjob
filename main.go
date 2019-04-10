@@ -6,10 +6,12 @@ import (
 	"github.com/dqinyuan/simpletfjob/kube"
 	"github.com/spf13/cobra"
 	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
-	"log"
-	"strconv"
 )
 
 /*
@@ -166,40 +168,55 @@ func filterNodes(nodes []string, exc bool, num int) []string {
 		nodes = filterNodesByExec(nodes, "exc")
 	}
 
-	if num != -1{
+	if num != -1 && num != 0{
 		nodes = nodes[:num]
 	}
 
 	return nodes
 }
 
-func main() {
-	var num int
-	var exc bool
-	var psn int
-	var psf string
+var (
+	num int
+	exc bool
+	psn int
+	psf string
+)
 
+func cmdFun(cmd *cobra.Command, args []string) {
+	tmplFile := args[0]
+	nodes := kube.ClusterNodenames()
+	nodes = filterNodes(nodes, exc, num)
+
+	ps, worker := decompose(nodes, psn, psf)
+
+	transfered := transfer(tmplFile, ps, worker)
+
+	fullPath, err := filepath.Abs(resultFileName(tmplFile))
+	if err != nil{
+		log.Fatalf("result file path error, %v\n", err)
+	}
+	ioutil.WriteFile(fullPath, []byte(transfered), 0644)
+}
+
+func main() {
 	rootCmd := &cobra.Command{
 		Use: "simpletfjob user_template",
 		Short: "transfer tensorflow job template to k8s job yaml",
-		Run: func(cmd *cobra.Command, args []string) {
-			tmplFile := args[0]
-			nodes := kube.ClusterNodenames()
-			nodes = filterNodes(nodes, exc, num)
-
-			ps, worker := decompose(nodes, psn, psf)
-
-			transfered := transfer(tmplFile, ps, worker)
-			ioutil.WriteFile(resultFileName(tmplFile), []byte(transfered), 0644)
-		},
+		Args:cobra.MinimumNArgs(1),
+		Run: cmdFun,
 	}
 
-	rootCmd.Flags().IntVarP(&psn, "psn", "PN", 1,
+	rootCmd.Flags().IntVar(&psn, "psn", 1,
 		"parameter server num")
-	rootCmd.Flags().StringVarP(&psf, "psf", "PF", "",
+	rootCmd.Flags().StringVar(&psf, "psf", "",
 		"special parameter server by file, not yet implemented")
 	rootCmd.Flags().IntVarP(&num, "num", "N", -1,
 		"server number you want to use")
 	rootCmd.Flags().BoolVarP(&exc, "exc", "E", false,
 		"the file name, in which are recorded server names you want to exclude each line")
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(rootCmd.UsageString())
+		os.Exit(1)
+	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/spf13/cobra"
 	"log"
 	"reflect"
 	"strings"
@@ -82,4 +83,12 @@ func TestFilerNodes(t *testing.T) {
 	if !reflect.DeepEqual(expected, filtered){
 		t.Errorf("Expected: %v, Real: %v", expected, filtered)
 	}
+}
+
+func TestCmdFun(t *testing.T) {
+	t.SkipNow()
+	mockCmd := &cobra.Command{}
+	psn = 1
+	num = 3
+	cmdFun(mockCmd, []string{"test_tmpl.yaml"})
 }
