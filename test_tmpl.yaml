@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mnist-{{.type}}-{{.index}}
+spec:
+  template:
+    spec:
+      nodeName: {{.host}}
+      hostNetwork: true
+      containers:
+        - name: tensorflow
+          image: tensorflow/tensorflow:1.13.1-py3
+          command: ["python", "mnist_cnn.py", "--strategy=ps"]
+          workingDir: /root/share/tensorflow/mnist
+          env:
+            - name: TF_CONFIG
+              value: >
+{{.TF_CONFIG}}
+          ports:
+            - containerPort: 2222
+              hostPort: 2222
+              name: tfjob-port
+          volumeMounts:
+            - mountPath: /root/share
+              name: mynfs
+      restartPolicy: OnFailure
+      volumes:
+        - name: mynfs
+          persistentVolumeClaim:
+            claimName: nfs-pvc
+  backoffLimit: 4
