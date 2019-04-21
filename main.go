@@ -26,7 +26,7 @@ import (
 const ARR_TEMPLATE = `{{range .}}"{{.}}:2222",{{end}}`
 
 const TF_CONFIG_TEMPLATE =
-`	            {
+`                {
                   "cluster": {
                     "ps": [{{.ps}}],
                     "worker": [{{.worker}}]

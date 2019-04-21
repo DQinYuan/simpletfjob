@@ -1,0 +1,125 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mnist-ps-0
+spec:
+  template:
+    spec:
+      nodeName: h50
+      hostNetwork: true
+      containers:
+        - name: tensorflow
+          image: tensorflow/tensorflow:1.13.1-py3
+          command: ["python", "mnist_cnn.py", "--strategy=ps"]
+          workingDir: /root/share/tensorflow/mnist
+          env:
+            - name: TF_CONFIG
+              value: >
+                {
+                  "cluster": {
+                    "ps": ["h50:2222"],
+                    "worker": ["h51:2222","h52:2222"]
+                  },
+                  "task": {
+                    "index": 0,
+                    "type": "ps"
+                  }
+                }
+
+          ports:
+            - containerPort: 2222
+              hostPort: 2222
+              name: tfjob-port
+          volumeMounts:
+            - mountPath: /root/share
+              name: mynfs
+      restartPolicy: OnFailure
+      volumes:
+        - name: mynfs
+          persistentVolumeClaim:
+            claimName: nfs-pvc
+  backoffLimit: 4
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mnist-worker-0
+spec:
+  template:
+    spec:
+      nodeName: h51
+      hostNetwork: true
+      containers:
+        - name: tensorflow
+          image: tensorflow/tensorflow:1.13.1-py3
+          command: ["python", "mnist_cnn.py", "--strategy=ps"]
+          workingDir: /root/share/tensorflow/mnist
+          env:
+            - name: TF_CONFIG
+              value: >
+                {
+                  "cluster": {
+                    "ps": ["h50:2222"],
+                    "worker": ["h51:2222","h52:2222"]
+                  },
+                  "task": {
+                    "index": 0,
+                    "type": "worker"
+                  }
+                }
+
+          ports:
+            - containerPort: 2222
+              hostPort: 2222
+              name: tfjob-port
+          volumeMounts:
+            - mountPath: /root/share
+              name: mynfs
+      restartPolicy: OnFailure
+      volumes:
+        - name: mynfs
+          persistentVolumeClaim:
+            claimName: nfs-pvc
+  backoffLimit: 4
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mnist-worker-1
+spec:
+  template:
+    spec:
+      nodeName: h52
+      hostNetwork: true
+      containers:
+        - name: tensorflow
+          image: tensorflow/tensorflow:1.13.1-py3
+          command: ["python", "mnist_cnn.py", "--strategy=ps"]
+          workingDir: /root/share/tensorflow/mnist
+          env:
+            - name: TF_CONFIG
+              value: >
+                {
+                  "cluster": {
+                    "ps": ["h50:2222"],
+                    "worker": ["h51:2222","h52:2222"]
+                  },
+                  "task": {
+                    "index": 1,
+                    "type": "worker"
+                  }
+                }
+
+          ports:
+            - containerPort: 2222
+              hostPort: 2222
+              name: tfjob-port
+          volumeMounts:
+            - mountPath: /root/share
+              name: mynfs
+      restartPolicy: OnFailure
+      volumes:
+        - name: mynfs
+          persistentVolumeClaim:
+            claimName: nfs-pvc
+  backoffLimit: 4
