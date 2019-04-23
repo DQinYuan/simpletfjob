@@ -6,6 +6,9 @@
 ,用户可以用这些模板变量编写Job模板文件,并且使用该工具将其转换为
 Kubernetes可以识别的Job文件。
 
+[下载地址](https://github.com/DQinYuan/simpletfjob/releases/download/0.1/simpletfjob)
+
+
 ## 场景
 
 如果想要使用Tensorflow Estimator API进行分布式训练的话,环境变量一般要求按
